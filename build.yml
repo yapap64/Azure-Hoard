@@ -1,0 +1,39 @@
+name: Compilar Azure Hoard (.exe)
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Compilar y crear el .exe
+        run: >
+          dotnet publish AzureHoard/AzureHoard.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -o out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AzureHoard-win-x64
+          path: out/AzureHoard.exe
+
+      - name: Adjuntar a la release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/AzureHoard.exe
